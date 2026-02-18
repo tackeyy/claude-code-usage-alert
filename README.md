@@ -1,3 +1,5 @@
+**English** | [日本語](README.ja.md)
+
 # claude-code-usage-alert
 
 > Real-time session budget alerts for Claude Code, powered by [Hooks](https://docs.anthropic.com/en/docs/claude-code/hooks).
