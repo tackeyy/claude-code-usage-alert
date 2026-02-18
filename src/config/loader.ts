@@ -7,9 +7,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import YAML from 'yaml';
-import { Config, ThresholdConfig, NotifyMethod, DEFAULT_CONFIG } from './defaults.js';
+import { Config, ThresholdConfig, NotifyMethod, PlanType, DEFAULT_CONFIG } from './defaults.js';
 
 const VALID_NOTIFY_METHODS: NotifyMethod[] = ['terminal', 'desktop', 'both'];
+const VALID_PLAN_TYPES: PlanType[] = ['max', 'api'];
 
 function getConfigDirPath(): string {
   return path.join(os.homedir(), '.claude-code-usage-alert');
@@ -51,6 +52,9 @@ export function loadConfig(): Config {
     const mergedBudget = { ...DEFAULT_CONFIG.budget, ...parsed?.budget };
     if (typeof mergedBudget.sessionBudget !== 'number' || mergedBudget.sessionBudget <= 0) {
       mergedBudget.sessionBudget = DEFAULT_CONFIG.budget.sessionBudget;
+    }
+    if (!VALID_PLAN_TYPES.includes(mergedBudget.plan)) {
+      mergedBudget.plan = DEFAULT_CONFIG.budget.plan;
     }
 
     // Validate thresholds

@@ -3,7 +3,7 @@
  * Routes notifications to terminal and/or desktop based on method.
  */
 
-import { NotifyMethod } from '../config/defaults.js';
+import { NotifyMethod, PlanType } from '../config/defaults.js';
 import { sendDesktopNotification } from './desktop.js';
 import { formatSystemMessage } from './terminal.js';
 
@@ -17,10 +17,15 @@ export function notify(
   cost: number,
   budget: number,
   method: NotifyMethod,
+  plan: PlanType = 'max',
 ): string | null {
   const emoji =
     threshold >= 90 ? '\u{1F6A8}' : threshold >= 80 ? '\u26A0\uFE0F' : '\u2139\uFE0F';
-  const message = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used`;
+  const base = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used`;
+  const message =
+    plan === 'api'
+      ? `${base} ($${cost.toFixed(2)} / $${budget.toFixed(2)})`
+      : base;
 
   let systemMessageJson: string | null = null;
 

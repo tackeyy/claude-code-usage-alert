@@ -3,6 +3,7 @@
  */
 
 export type NotifyMethod = 'terminal' | 'desktop' | 'both';
+export type PlanType = 'max' | 'api';
 
 export interface ThresholdConfig {
   percent: number;
@@ -12,6 +13,7 @@ export interface ThresholdConfig {
 export interface Config {
   budget: {
     mode: 'cost';
+    plan: PlanType;
     sessionBudget: number;
   };
   thresholds: ThresholdConfig[];
@@ -25,6 +27,7 @@ export interface Config {
 export const DEFAULT_CONFIG: Config = {
   budget: {
     mode: 'cost',
+    plan: 'max',
     sessionBudget: 5.0,
   },
   thresholds: [

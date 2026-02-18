@@ -113,6 +113,7 @@ function handleStop(input: HookInput): void {
       state.currentSession.cumulativeCostUsd,
       config.budget.sessionBudget,
       method,
+      config.budget.plan,
     );
 
     // Mark threshold as notified
