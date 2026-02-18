@@ -242,7 +242,18 @@ Not currently. Desktop notifications use `osascript` (macOS) and `notify-send` (
 
 ## Comparison with Existing Tools
 
-For a detailed analysis of why existing tools did not meet the requirements for real-time, in-session budget alerting, see [docs/competitive-analysis.md](docs/competitive-analysis.md).
+The Claude Code ecosystem already has excellent usage monitoring tools. claude-code-usage-alert focuses specifically on **real-time, in-session budget alerting via Hooks** -- a niche not covered by the tools below.
+
+| Tool | Approach | Strengths | Difference from this tool |
+|------|----------|-----------|--------------------------|
+| [ccusage](https://github.com/ryoppippi/ccusage) | Post-session JSONL analysis | Most mature and widely adopted; accurate token/cost reports | Designed for after-session review, not real-time alerting. Our JSONL parsing approach is inspired by ccusage. |
+| [Claude-Code-Usage-Monitor](https://github.com/1rgs/Claude-Code-Usage-Monitor) | Standalone terminal dashboard | Rich TUI with ML-based prediction | Runs in a separate terminal window; not integrated into Claude Code via Hooks. |
+| [Claude-Usage-Tracker](https://github.com/nicekid1/Claude-Usage-Tracker) | macOS menu bar app | Polished native UI with tiered alerts | macOS only; our tiered threshold UX was inspired by this tool's design. |
+| [claude-o-meter](https://github.com/ansonTGN/claude-o-meter) | Go binary, PTY scraping | Single binary, no runtime deps | Linux-focused; relies on parsing `/usage` command output which may change between CLI versions. |
+
+Each tool solves a different part of the usage monitoring problem. If you need detailed post-session analysis, we recommend [ccusage](https://github.com/ryoppippi/ccusage). claude-code-usage-alert is designed to complement these tools by providing **proactive in-session alerts** through Claude Code's official Hooks extension point.
+
+For a detailed requirements analysis, see [docs/competitive-analysis.md](docs/competitive-analysis.md).
 
 ## Contributing
 

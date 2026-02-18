@@ -242,7 +242,18 @@ ccusage は**事後分析**ツールです。セッション終了後に使用�
 
 ## 既存ツールとの比較
 
-リアルタイムのセッション内予算通知の要件を満たさない既存ツールの詳細な分析については、[docs/competitive-analysis.md](docs/competitive-analysis.md) を参照してください。
+Claude Code のエコシステムには優れた使用量モニタリングツールが既に存在します。claude-code-usage-alert は **Hooks を通じたリアルタイムのセッション内予算通知** という、以下のツールがカバーしていない領域に特化しています。
+
+| ツール | アプローチ | 強み | 本ツールとの違い |
+|--------|----------|------|----------------|
+| [ccusage](https://github.com/ryoppippi/ccusage) | セッション後の JSONL 分析 | 最も成熟し広く使われている。正確なトークン/コストレポート | セッション後の振り返り用で、リアルタイム通知は対象外。本ツールの JSONL 解析は ccusage に着想を得ています。 |
+| [Claude-Code-Usage-Monitor](https://github.com/1rgs/Claude-Code-Usage-Monitor) | 独立したターミナルダッシュボード | ML 予測付きのリッチな TUI | 別のターミナルウィンドウで動作。Hooks 経由の Claude Code 統合ではありません。 |
+| [Claude-Usage-Tracker](https://github.com/nicekid1/Claude-Usage-Tracker) | macOS メニューバーアプリ | 洗練されたネイティブ UI と段階的アラート | macOS 専用。本ツールの段階的な閾値通知 UX はこのツールの設計に着想を得ています。 |
+| [claude-o-meter](https://github.com/ansonTGN/claude-o-meter) | Go バイナリ、PTY スクレイピング | 単一バイナリ、ランタイム依存なし | Linux 中心。`/usage` コマンド出力の解析に依存しており、CLI バージョン間で変更される可能性があります。 |
+
+各ツールは使用量モニタリングの異なる側面を解決しています。セッション後の詳細分析には [ccusage](https://github.com/ryoppippi/ccusage) を推奨します。claude-code-usage-alert は Claude Code の公式 Hooks 拡張ポイントを通じた**プロアクティブなセッション内通知**を提供することで、これらのツールを補完する設計です。
+
+要件分析の詳細は [docs/competitive-analysis.md](docs/competitive-analysis.md) を参照してください。
 
 ## コントリビューション
 
