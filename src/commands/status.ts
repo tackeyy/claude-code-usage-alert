@@ -41,9 +41,9 @@ export function runStatus(): void {
   console.log(`Session ID:  ${session.sessionId}`);
   console.log(`Started at:  ${session.startedAt}`);
   console.log('');
-  console.log(`Budget:      $${config.budget.sessionBudget.toFixed(2)}`);
-  console.log(`Used:        $${session.cumulativeCostUsd.toFixed(4)} (${Math.round(percent)}%)`);
-  console.log(`Remaining:   $${remaining.toFixed(4)}`);
+  console.log(`Budget:          $${config.budget.sessionBudget.toFixed(2)}`);
+  console.log(`Used (est.):     $${session.cumulativeCostUsd.toFixed(4)} (${Math.round(percent)}%)`);
+  console.log(`Remaining (est.):$${remaining.toFixed(4)}`);
   console.log('');
   console.log('Tokens:');
   console.log(`  Input:          ${session.cumulativeTokens.input.toLocaleString()}`);

@@ -18,11 +18,9 @@ export function notify(
   budget: number,
   method: NotifyMethod,
 ): string | null {
-  const costStr = `$${cost.toFixed(2)}`;
-  const budgetStr = `$${budget.toFixed(2)}`;
   const emoji =
     threshold >= 90 ? '\u{1F6A8}' : threshold >= 80 ? '\u26A0\uFE0F' : '\u2139\uFE0F';
-  const message = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used (${costStr} est. / ${budgetStr} limit)`;
+  const message = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used`;
 
   let systemMessageJson: string | null = null;
 
