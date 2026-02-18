@@ -1,0 +1,44 @@
+{
+  "name": "claude-code-usage-alert",
+  "version": "0.1.0",
+  "description": "Tiered usage alerts for Claude Code via Hooks — know before you hit the limit",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-code-usage-alert": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "npm run lint:md",
+    "lint:md": "markdownlint-cli2 '**/*.md' '!node_modules'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "claude-code",
+    "usage",
+    "alert",
+    "hooks",
+    "anthropic",
+    "cli"
+  ],
+  "author": "tackeyy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tackeyy/claude-code-usage-alert.git"
+  },
+  "homepage": "https://github.com/tackeyy/claude-code-usage-alert",
+  "dependencies": {
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "markdownlint-cli2": "^0.12.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}

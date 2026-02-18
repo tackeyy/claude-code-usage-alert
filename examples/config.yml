@@ -1,0 +1,20 @@
+# claude-code-usage-alert configuration
+# Location: ~/.claude-code-usage-alert/config.yml
+
+budget:
+  mode: cost
+  # Session budget in USD
+  sessionBudget: 5.00
+
+thresholds:
+  - percent: 50
+    notify: terminal    # terminal only
+  - percent: 80
+    notify: both        # terminal + desktop
+  - percent: 90
+    notify: both        # terminal + desktop
+
+notifications:
+  desktop: true
+  terminal: true
+  sound: false
