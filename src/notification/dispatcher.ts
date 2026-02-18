@@ -22,7 +22,7 @@ export function notify(
   const budgetStr = `$${budget.toFixed(2)}`;
   const emoji =
     threshold >= 90 ? '\u{1F6A8}' : threshold >= 80 ? '\u26A0\uFE0F' : '\u2139\uFE0F';
-  const message = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used (${costStr} / ${budgetStr})`;
+  const message = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used (${costStr} est. / ${budgetStr})`;
 
   let systemMessageJson: string | null = null;
 
