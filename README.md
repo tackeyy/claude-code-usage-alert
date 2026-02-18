@@ -15,6 +15,26 @@ Claude Code does not expose a usage API or built-in budget limits for Max plan u
 - **macOS + Linux** -- uses `osascript` on macOS and `notify-send` on Linux
 - **Near-zero dependencies** -- only [`yaml`](https://github.com/eemeli/yaml) at runtime
 
+## Use Cases
+
+### Max plan users: anticipate daily limit before it hits
+
+Max plan (Pro / Max 5x) charges a flat monthly fee, but there is a daily usage cap. Since Anthropic does not expose this cap or your current usage rate via API, you have no way to know how close you are until you hit the wall.
+
+With claude-code-usage-alert, you receive notifications when your estimated session spend crosses your configured thresholds, giving you a sense of pace before your work is suddenly interrupted.
+
+> **Note:** The dollar amounts shown in alerts are API-equivalent estimates, not actual Max plan limit consumption. They serve as a relative indicator of how much resource you are using in the current session.
+
+### Users who switch between Max plan and API
+
+Some users switch to an API key when they hit the Max plan's daily limit. Under API billing, you pay per token, so cost awareness during a session becomes more important.
+
+Setting a session budget helps you keep track of roughly how much you are spending per session, regardless of which billing mode you are on.
+
+### Shared cost awareness across teams
+
+When team members use Claude Code daily, configuring a per-person session budget creates a lightweight self-awareness mechanism to prevent unexpectedly heavy usage.
+
 ## Quick Start
 
 ```bash
