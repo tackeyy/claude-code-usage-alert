@@ -43,6 +43,8 @@ describe('state-manager', () => {
         transcriptOffset: 1024,
         notifiedThresholds: [50],
       },
+      sessionHistory: [],
+      weeklyNotifiedThresholds: [],
     };
     stateManager.saveState(state);
     const loaded = stateManager.loadState();
@@ -113,10 +115,293 @@ describe('state-manager', () => {
     expect(stateManager.getNotifiedThresholds(state).filter((t) => t === 50).length).toBe(1);
   });
 
-  it('clearSession removes current session', () => {
-    stateManager.initSession('sess-001');
+  it('clearSession removes current session but preserves history', () => {
+    const state = stateManager.initSession('sess-001');
+    stateManager.updateSession(
+      state,
+      { input: 100, output: 50, cacheRead: 0, cacheCreation: 0 },
+      1.0,
+      512,
+    );
+    stateManager.archiveSession(state);
     stateManager.clearSession();
+
+    const loaded = stateManager.loadState();
+    expect(loaded.currentSession).toBeNull();
+    expect(loaded.sessionHistory.length).toBe(1);
+    expect(loaded.sessionHistory[0].costUsd).toBe(1.0);
+  });
+
+  it('loadState handles backward-compatible state without sessionHistory', () => {
+    // Simulate old state format (no sessionHistory/weeklyNotifiedThresholds)
+    const dir = path.join(tmpDir, '.claude-code-usage-alert');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'state.json'),
+      JSON.stringify({ currentSession: null }),
+      'utf-8',
+    );
+
     const state = stateManager.loadState();
     expect(state.currentSession).toBeNull();
+    expect(state.sessionHistory).toEqual([]);
+    expect(state.weeklyNotifiedThresholds).toEqual([]);
+  });
+});
+
+describe('archiveSession', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-alert-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('archives current session to history', () => {
+    const state = stateManager.initSession('sess-001');
+    stateManager.updateSession(
+      state,
+      { input: 500, output: 200, cacheRead: 100, cacheCreation: 50 },
+      2.5,
+      1024,
+    );
+
+    stateManager.archiveSession(state);
+
+    expect(state.sessionHistory.length).toBe(1);
+    expect(state.sessionHistory[0].sessionId).toBe('sess-001');
+    expect(state.sessionHistory[0].costUsd).toBe(2.5);
+    expect(state.sessionHistory[0].tokens.input).toBe(500);
+    expect(state.sessionHistory[0].endedAt).toBeTruthy();
+  });
+
+  it('does nothing when no current session', () => {
+    const state = stateManager.loadState();
+    stateManager.archiveSession(state);
+    expect(state.sessionHistory.length).toBe(0);
+  });
+
+  it('accumulates multiple archived sessions', () => {
+    const state1 = stateManager.initSession('sess-001');
+    stateManager.updateSession(
+      state1,
+      { input: 100, output: 50, cacheRead: 0, cacheCreation: 0 },
+      1.0,
+      512,
+    );
+    stateManager.archiveSession(state1);
+    stateManager.clearSession();
+
+    const state2 = stateManager.initSession('sess-002');
+    stateManager.updateSession(
+      state2,
+      { input: 200, output: 100, cacheRead: 0, cacheCreation: 0 },
+      2.0,
+      1024,
+    );
+    stateManager.archiveSession(state2);
+
+    expect(state2.sessionHistory.length).toBe(2);
+    expect(state2.sessionHistory[0].sessionId).toBe('sess-001');
+    expect(state2.sessionHistory[1].sessionId).toBe('sess-002');
+  });
+});
+
+describe('getWeeklyCost', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-alert-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns 0 when no history and no current session', () => {
+    const state = stateManager.loadState();
+    expect(stateManager.getWeeklyCost(state, 'monday')).toBe(0);
+  });
+
+  it('includes current session cost', () => {
+    const state = stateManager.initSession('sess-001');
+    stateManager.updateSession(
+      state,
+      { input: 100, output: 50, cacheRead: 0, cacheCreation: 0 },
+      3.0,
+      512,
+    );
+    expect(stateManager.getWeeklyCost(state, 'monday')).toBe(3.0);
+  });
+
+  it('includes recent history entries', () => {
+    const now = new Date();
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: null,
+      sessionHistory: [
+        {
+          sessionId: 'old-sess',
+          endedAt: now.toISOString(),
+          costUsd: 5.0,
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        },
+      ],
+      weeklyNotifiedThresholds: [],
+    };
+    stateManager.saveState(state);
+    const loaded = stateManager.loadState();
+    expect(stateManager.getWeeklyCost(loaded, 'monday')).toBe(5.0);
+  });
+
+  it('excludes history entries from before the weekly window', () => {
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 10); // 10 days ago
+
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: null,
+      sessionHistory: [
+        {
+          sessionId: 'old-sess',
+          endedAt: oldDate.toISOString(),
+          costUsd: 5.0,
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        },
+      ],
+      weeklyNotifiedThresholds: [],
+    };
+    stateManager.saveState(state);
+    const loaded = stateManager.loadState();
+    expect(stateManager.getWeeklyCost(loaded, 'monday')).toBe(0);
+  });
+
+  it('sums history and current session', () => {
+    const now = new Date();
+    const state = stateManager.initSession('sess-002');
+    stateManager.updateSession(
+      state,
+      { input: 100, output: 50, cacheRead: 0, cacheCreation: 0 },
+      2.0,
+      512,
+    );
+    state.sessionHistory = [
+      {
+        sessionId: 'sess-001',
+        endedAt: now.toISOString(),
+        costUsd: 3.0,
+        tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+      },
+    ];
+    expect(stateManager.getWeeklyCost(state, 'monday')).toBe(5.0);
+  });
+});
+
+describe('pruneOldHistory', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-alert-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('removes entries older than the weekly window', () => {
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 10);
+    const recentDate = new Date();
+
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: null,
+      sessionHistory: [
+        {
+          sessionId: 'old',
+          endedAt: oldDate.toISOString(),
+          costUsd: 5.0,
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        },
+        {
+          sessionId: 'recent',
+          endedAt: recentDate.toISOString(),
+          costUsd: 3.0,
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        },
+      ],
+      weeklyNotifiedThresholds: [50],
+    };
+
+    stateManager.pruneOldHistory(state, 'monday');
+
+    expect(state.sessionHistory.length).toBe(1);
+    expect(state.sessionHistory[0].sessionId).toBe('recent');
+    // Weekly thresholds should be reset
+    expect(state.weeklyNotifiedThresholds).toEqual([]);
+  });
+
+  it('keeps all entries if all within window', () => {
+    const now = new Date();
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: null,
+      sessionHistory: [
+        {
+          sessionId: 'sess-1',
+          endedAt: now.toISOString(),
+          costUsd: 2.0,
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        },
+      ],
+      weeklyNotifiedThresholds: [],
+    };
+
+    stateManager.pruneOldHistory(state, 'monday');
+    expect(state.sessionHistory.length).toBe(1);
+  });
+});
+
+describe('getWeeklyWindowStart', () => {
+  it('returns correct window start when today is after reset day', () => {
+    // Wednesday, resetDay=monday → should return this Monday
+    const wednesday = new Date('2026-02-18T15:00:00'); // Wednesday
+    const windowStart = stateManager.getWeeklyWindowStart('monday', wednesday);
+    expect(windowStart.getDay()).toBe(1); // Monday
+    expect(windowStart.getDate()).toBe(16); // Monday Feb 16
+    expect(windowStart.getHours()).toBe(0);
+  });
+
+  it('returns correct window start when today is before reset day', () => {
+    // Tuesday, resetDay=wednesday → should return last Wednesday
+    const tuesday = new Date('2026-02-17T15:00:00'); // Tuesday
+    const windowStart = stateManager.getWeeklyWindowStart('wednesday', tuesday);
+    expect(windowStart.getDay()).toBe(3); // Wednesday
+    expect(windowStart.getDate()).toBe(11); // Last Wednesday Feb 11
+  });
+
+  it('returns today when today is reset day', () => {
+    // Monday, resetDay=monday → should return today (Monday) at 00:00
+    const monday = new Date('2026-02-16T15:00:00'); // Monday
+    const windowStart = stateManager.getWeeklyWindowStart('monday', monday);
+    expect(windowStart.getDay()).toBe(1); // Monday
+    expect(windowStart.getDate()).toBe(16); // This Monday
+    expect(windowStart.getHours()).toBe(0);
+  });
+});
+
+describe('weekly threshold notifications', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-alert-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('markWeeklyThresholdNotified adds threshold', () => {
+    const state = stateManager.loadState();
+    stateManager.markWeeklyThresholdNotified(state, 50);
+    expect(stateManager.getWeeklyNotifiedThresholds(state)).toContain(50);
+  });
+
+  it('markWeeklyThresholdNotified does not duplicate', () => {
+    const state = stateManager.loadState();
+    stateManager.markWeeklyThresholdNotified(state, 50);
+    stateManager.markWeeklyThresholdNotified(state, 50);
+    expect(state.weeklyNotifiedThresholds.filter((t) => t === 50).length).toBe(1);
   });
 });

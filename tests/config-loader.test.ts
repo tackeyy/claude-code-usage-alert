@@ -151,4 +151,100 @@ describe('config loader validation', () => {
     const config = loader.loadConfig();
     expect(config.thresholds).toEqual(validThresholds);
   });
+
+  it('returns default weeklyBudget when not specified', () => {
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyBudget).toBe(DEFAULT_CONFIG.budget.weeklyBudget);
+  });
+
+  it('accepts valid weeklyBudget', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: 100, weeklyResetDay: 'monday' },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyBudget).toBe(100);
+  });
+
+  it('falls back weeklyBudget to default when negative', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: -10, weeklyResetDay: 'monday' },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyBudget).toBe(DEFAULT_CONFIG.budget.weeklyBudget);
+  });
+
+  it('falls back weeklyBudget to default when zero', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: 0, weeklyResetDay: 'monday' },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyBudget).toBe(DEFAULT_CONFIG.budget.weeklyBudget);
+  });
+
+  it('falls back weeklyBudget to default when not a number', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: 'abc', weeklyResetDay: 'monday' },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyBudget).toBe(DEFAULT_CONFIG.budget.weeklyBudget);
+  });
+
+  it('accepts valid weeklyResetDay', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: 50, weeklyResetDay: 'wednesday' },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyResetDay).toBe('wednesday');
+  });
+
+  it('falls back weeklyResetDay to default when invalid', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: 50, weeklyResetDay: 'funday' },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyResetDay).toBe(DEFAULT_CONFIG.budget.weeklyResetDay);
+  });
+
+  it('falls back weeklyResetDay to default when not a string', () => {
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configFile,
+      YAML.stringify({
+        budget: { mode: 'cost', sessionBudget: 5, weeklyBudget: 50, weeklyResetDay: 123 },
+        thresholds: DEFAULT_CONFIG.thresholds,
+      }),
+    );
+    const config = loader.loadConfig();
+    expect(config.budget.weeklyResetDay).toBe(DEFAULT_CONFIG.budget.weeklyResetDay);
+  });
 });

@@ -17,12 +17,15 @@ export function notify(
   cost: number,
   budget: number,
   method: NotifyMethod,
+  scope: 'session' | 'weekly' = 'session',
 ): string | null {
   const costStr = `$${cost.toFixed(2)}`;
   const budgetStr = `$${budget.toFixed(2)}`;
   const emoji =
     threshold >= 90 ? '\u{1F6A8}' : threshold >= 80 ? '\u26A0\uFE0F' : '\u2139\uFE0F';
-  const message = `${emoji} Usage Alert: ${Math.round(percent)}% of session budget used (${costStr} est. / ${budgetStr})`;
+  const prefix = scope === 'weekly' ? '[Weekly] ' : '';
+  const budgetLabel = scope === 'weekly' ? 'weekly budget' : 'session budget';
+  const message = `${emoji} ${prefix}Usage Alert: ${Math.round(percent)}% of ${budgetLabel} used (${costStr} est. / ${budgetStr})`;
 
   let systemMessageJson: string | null = null;
 

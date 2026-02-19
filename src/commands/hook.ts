@@ -13,6 +13,11 @@ import {
   markThresholdNotified,
   clearSession,
   loadState,
+  archiveSession,
+  getWeeklyCost,
+  pruneOldHistory,
+  getWeeklyNotifiedThresholds,
+  markWeeklyThresholdNotified,
 } from '../core/state-manager.js';
 import { getUsagePercent, checkThresholds } from '../core/usage-calculator.js';
 import { loadConfig } from '../config/loader.js';
@@ -49,6 +54,10 @@ function parseHookInput(raw: string): HookInput {
  * Handle SessionStart event.
  */
 function handleSessionStart(input: HookInput): void {
+  const config = loadConfig();
+  const state = loadState();
+  pruneOldHistory(state, config.budget.weeklyResetDay);
+
   const sessionId = input.session_id ?? `session-${Date.now()}`;
   initSession(sessionId);
 }
@@ -113,6 +122,7 @@ function handleStop(input: HookInput): void {
       state.currentSession.cumulativeCostUsd,
       config.budget.sessionBudget,
       method,
+      'session',
     );
 
     // Mark threshold as notified
@@ -123,12 +133,42 @@ function handleStop(input: HookInput): void {
       process.stdout.write(systemMessage);
     }
   }
+
+  // Weekly budget threshold check
+  const weeklyCost = getWeeklyCost(state, config.budget.weeklyResetDay);
+  const weeklyPercent = getUsagePercent(weeklyCost, config.budget.weeklyBudget);
+  const weeklyNotified = getWeeklyNotifiedThresholds(state);
+  const weeklyResult = checkThresholds(weeklyPercent, weeklyNotified, configThresholds);
+
+  if (weeklyResult.shouldNotify) {
+    const thresholdConfig = config.thresholds.find(
+      (t) => t.percent === weeklyResult.threshold,
+    );
+    const method = thresholdConfig?.notify ?? 'terminal';
+
+    const weeklySystemMessage = notify(
+      weeklyResult.threshold,
+      weeklyPercent,
+      weeklyCost,
+      config.budget.weeklyBudget,
+      method,
+      'weekly',
+    );
+
+    markWeeklyThresholdNotified(state, weeklyResult.threshold);
+
+    if (weeklySystemMessage) {
+      process.stdout.write(weeklySystemMessage);
+    }
+  }
 }
 
 /**
  * Handle SessionEnd event.
  */
 function handleSessionEnd(_input: HookInput): void {
+  const state = loadState();
+  archiveSession(state);
   clearSession();
 }
 

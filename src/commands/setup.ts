@@ -99,7 +99,7 @@ export function runSetup(): void {
   console.log(`  Config file created: ${getConfigFile()}`);
 
   // 2. Initialize state file
-  saveState({ currentSession: null });
+  saveState({ currentSession: null, sessionHistory: [], weeklyNotifiedThresholds: [] });
   console.log(`  State file created: ${getStateDir()}/state.json`);
 
   // 3. Register hooks in Claude Code settings

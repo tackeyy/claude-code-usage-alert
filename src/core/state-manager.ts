@@ -17,8 +17,17 @@ export interface SessionState {
   notifiedThresholds: number[];
 }
 
+export interface SessionHistoryEntry {
+  sessionId: string;
+  endedAt: string;  // ISO 8601
+  costUsd: number;
+  tokens: TokenCounts;
+}
+
 export interface State {
   currentSession: SessionState | null;
+  sessionHistory: SessionHistoryEntry[];
+  weeklyNotifiedThresholds: number[];
 }
 
 function getStateDirPath(): string {
@@ -38,13 +47,19 @@ function ensureDir(): void {
 
 /**
  * Load state from disk. Returns empty state if file doesn't exist.
+ * Handles backward compatibility for missing sessionHistory / weeklyNotifiedThresholds.
  */
 export function loadState(): State {
   try {
     const raw = fs.readFileSync(getStateFilePath(), 'utf-8');
-    return JSON.parse(raw) as State;
+    const parsed = JSON.parse(raw) as Partial<State>;
+    return {
+      currentSession: parsed.currentSession ?? null,
+      sessionHistory: parsed.sessionHistory ?? [],
+      weeklyNotifiedThresholds: parsed.weeklyNotifiedThresholds ?? [],
+    };
   } catch {
-    return { currentSession: null };
+    return { currentSession: null, sessionHistory: [], weeklyNotifiedThresholds: [] };
   }
 }
 
@@ -123,10 +138,136 @@ export function markThresholdNotified(state: State, threshold: number): void {
 
 /**
  * Clear session state (for SessionEnd).
+ * Preserves sessionHistory and weeklyNotifiedThresholds.
  */
 export function clearSession(): void {
-  const state: State = { currentSession: null };
+  const state = loadState();
+  state.currentSession = null;
   saveState(state);
+}
+
+/**
+ * Archive the current session into sessionHistory.
+ * Should be called before clearSession() on SessionEnd.
+ */
+export function archiveSession(state: State): void {
+  if (!state.currentSession) return;
+
+  const entry: SessionHistoryEntry = {
+    sessionId: state.currentSession.sessionId,
+    endedAt: new Date().toISOString(),
+    costUsd: state.currentSession.cumulativeCostUsd,
+    tokens: { ...state.currentSession.cumulativeTokens },
+  };
+
+  state.sessionHistory.push(entry);
+  saveState(state);
+}
+
+/**
+ * Calculate the start of the current weekly window based on resetDay.
+ * Returns the most recent past occurrence of resetDay at 00:00 local time.
+ */
+export function getWeeklyWindowStart(resetDay: string, now?: Date): Date {
+  const DAYS: Record<string, number> = {
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+    thursday: 4, friday: 5, saturday: 6,
+  };
+
+  const current = now ?? new Date();
+  const targetDay = DAYS[resetDay] ?? 1; // default to monday
+  const currentDay = current.getDay();
+
+  let daysBack = currentDay - targetDay;
+  if (daysBack < 0) daysBack += 7;
+
+  const windowStart = new Date(current);
+  windowStart.setDate(windowStart.getDate() - daysBack);
+  windowStart.setHours(0, 0, 0, 0);
+
+  return windowStart;
+}
+
+/**
+ * Get the total cost within the current weekly window.
+ * Includes history entries + current session cost.
+ */
+export function getWeeklyCost(state: State, resetDay: string): number {
+  const windowStart = getWeeklyWindowStart(resetDay);
+  const windowStartTime = windowStart.getTime();
+
+  let total = 0;
+
+  for (const entry of state.sessionHistory) {
+    const entryTime = new Date(entry.endedAt).getTime();
+    if (entryTime >= windowStartTime) {
+      total += entry.costUsd;
+    }
+  }
+
+  if (state.currentSession) {
+    total += state.currentSession.cumulativeCostUsd;
+  }
+
+  return total;
+}
+
+/**
+ * Get the number of sessions in the current weekly window (history + current if active).
+ */
+export function getWeeklySessionCount(state: State, resetDay: string): number {
+  const windowStart = getWeeklyWindowStart(resetDay);
+  const windowStartTime = windowStart.getTime();
+
+  let count = 0;
+
+  for (const entry of state.sessionHistory) {
+    const entryTime = new Date(entry.endedAt).getTime();
+    if (entryTime >= windowStartTime) {
+      count++;
+    }
+  }
+
+  if (state.currentSession) {
+    count++;
+  }
+
+  return count;
+}
+
+/**
+ * Remove history entries older than the current weekly window.
+ */
+export function pruneOldHistory(state: State, resetDay: string): void {
+  const windowStart = getWeeklyWindowStart(resetDay);
+  const windowStartTime = windowStart.getTime();
+
+  state.sessionHistory = state.sessionHistory.filter(
+    (entry) => new Date(entry.endedAt).getTime() >= windowStartTime,
+  );
+
+  // Reset weekly thresholds when window changes
+  // (any previously notified thresholds are for a past window)
+  state.weeklyNotifiedThresholds = [];
+
+  saveState(state);
+}
+
+/**
+ * Mark a weekly threshold as notified.
+ */
+export function markWeeklyThresholdNotified(state: State, threshold: number): void {
+  if (!state.weeklyNotifiedThresholds.includes(threshold)) {
+    state.weeklyNotifiedThresholds.push(threshold);
+    saveState(state);
+  }
+}
+
+/**
+ * Get the list of already-notified weekly thresholds.
+ */
+export function getWeeklyNotifiedThresholds(state: State): number[] {
+  return state.weeklyNotifiedThresholds;
 }
 
 /**

@@ -3,6 +3,11 @@
  */
 
 export type NotifyMethod = 'terminal' | 'desktop' | 'both';
+export type WeekDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+export const VALID_WEEK_DAYS: WeekDay[] = [
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+];
 
 export interface ThresholdConfig {
   percent: number;
@@ -13,6 +18,8 @@ export interface Config {
   budget: {
     mode: 'cost';
     sessionBudget: number;
+    weeklyBudget: number;
+    weeklyResetDay: WeekDay;
   };
   thresholds: ThresholdConfig[];
   notifications: {
@@ -26,6 +33,8 @@ export const DEFAULT_CONFIG: Config = {
   budget: {
     mode: 'cost',
     sessionBudget: 5.0,
+    weeklyBudget: 50.0,
+    weeklyResetDay: 'monday',
   },
   thresholds: [
     { percent: 50, notify: 'terminal' },

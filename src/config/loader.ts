@@ -7,7 +7,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import YAML from 'yaml';
-import { Config, ThresholdConfig, NotifyMethod, DEFAULT_CONFIG } from './defaults.js';
+import { Config, ThresholdConfig, NotifyMethod, WeekDay, VALID_WEEK_DAYS, DEFAULT_CONFIG } from './defaults.js';
 
 const VALID_NOTIFY_METHODS: NotifyMethod[] = ['terminal', 'desktop', 'both'];
 
@@ -51,6 +51,15 @@ export function loadConfig(): Config {
     const mergedBudget = { ...DEFAULT_CONFIG.budget, ...parsed?.budget };
     if (typeof mergedBudget.sessionBudget !== 'number' || mergedBudget.sessionBudget <= 0) {
       mergedBudget.sessionBudget = DEFAULT_CONFIG.budget.sessionBudget;
+    }
+    if (typeof mergedBudget.weeklyBudget !== 'number' || mergedBudget.weeklyBudget <= 0) {
+      mergedBudget.weeklyBudget = DEFAULT_CONFIG.budget.weeklyBudget;
+    }
+    if (
+      typeof mergedBudget.weeklyResetDay !== 'string' ||
+      !VALID_WEEK_DAYS.includes(mergedBudget.weeklyResetDay as WeekDay)
+    ) {
+      mergedBudget.weeklyResetDay = DEFAULT_CONFIG.budget.weeklyResetDay;
     }
 
     // Validate thresholds
