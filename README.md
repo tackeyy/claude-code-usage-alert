@@ -15,6 +15,8 @@ Claude Code does not expose a usage API or built-in budget limits for Max plan u
 - **macOS + Linux** -- uses `osascript` on macOS and `notify-send` on Linux
 - **Near-zero dependencies** -- only [`yaml`](https://github.com/eemeli/yaml) at runtime
 
+![Desktop notification sample](docs/images/notification-sample.png)
+
 ## Use Cases
 
 ### Max plan users: anticipate daily limit before it hits

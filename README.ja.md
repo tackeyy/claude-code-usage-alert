@@ -15,6 +15,8 @@ Claude Code は Max プランユーザー向けの使用量 API やビルトイ�
 - **macOS + Linux 対応** -- macOS では `osascript`、Linux では `notify-send` を使用
 - **ほぼゼロの外部依存** -- ランタイム依存は [`yaml`](https://github.com/eemeli/yaml) のみ
 
+![デスクトップ通知のサンプル](docs/images/notification-sample.png)
+
 ## 想定ユースケース
 
 ### Max プランユーザー：1日のリミット到達を事前に察知したい
