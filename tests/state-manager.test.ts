@@ -383,6 +383,87 @@ describe('getWeeklyWindowStart', () => {
   });
 });
 
+describe('getWeeklyTrackingSince', () => {
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-alert-state-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns null when no sessions exist', () => {
+    const state = stateManager.loadState();
+    expect(stateManager.getWeeklyTrackingSince(state, 'monday')).toBeNull();
+  });
+
+  it('returns null when tracking covers full window', () => {
+    // Window starts at Monday 00:00, session started at Monday 00:30
+    const monday = new Date('2026-02-16T00:30:00');
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: {
+        sessionId: 'sess-001',
+        startedAt: monday.toISOString(),
+        cumulativeCostUsd: 1.0,
+        cumulativeTokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        transcriptOffset: 0,
+        notifiedThresholds: [],
+      },
+      sessionHistory: [],
+      weeklyNotifiedThresholds: [],
+    };
+    // Within 1 hour of window start → full coverage
+    expect(stateManager.getWeeklyTrackingSince(state, 'monday', monday)).toBeNull();
+  });
+
+  it('returns tracking start date when partial coverage', () => {
+    // Window starts Monday 00:00, but first session is Wednesday
+    const wednesday = new Date('2026-02-18T10:00:00');
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: {
+        sessionId: 'sess-001',
+        startedAt: wednesday.toISOString(),
+        cumulativeCostUsd: 1.0,
+        cumulativeTokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        transcriptOffset: 0,
+        notifiedThresholds: [],
+      },
+      sessionHistory: [],
+      weeklyNotifiedThresholds: [],
+    };
+    const result = stateManager.getWeeklyTrackingSince(state, 'monday', wednesday);
+    expect(result).not.toBeNull();
+    expect(result!.getDay()).toBe(3); // Wednesday
+  });
+
+  it('uses earliest session from history', () => {
+    const tuesday = new Date('2026-02-17T10:00:00');
+    const wednesday = new Date('2026-02-18T10:00:00');
+    const state: ReturnType<typeof stateManager.loadState> = {
+      currentSession: {
+        sessionId: 'sess-002',
+        startedAt: wednesday.toISOString(),
+        cumulativeCostUsd: 1.0,
+        cumulativeTokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        transcriptOffset: 0,
+        notifiedThresholds: [],
+      },
+      sessionHistory: [
+        {
+          sessionId: 'sess-001',
+          endedAt: tuesday.toISOString(),
+          costUsd: 2.0,
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 },
+        },
+      ],
+      weeklyNotifiedThresholds: [],
+    };
+    const result = stateManager.getWeeklyTrackingSince(state, 'monday', wednesday);
+    expect(result).not.toBeNull();
+    expect(result!.getDay()).toBe(2); // Tuesday (earlier than Wednesday)
+  });
+});
+
 describe('weekly threshold notifications', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-alert-state-'));

@@ -271,6 +271,44 @@ export function getWeeklyNotifiedThresholds(state: State): number[] {
 }
 
 /**
+ * Check if weekly tracking covers the full window.
+ * Returns the tracking start date if partial, or null if full coverage.
+ */
+export function getWeeklyTrackingSince(state: State, resetDay: string, now?: Date): Date | null {
+  const windowStart = getWeeklyWindowStart(resetDay, now);
+
+  // Find the earliest data point in this window
+  let earliest: Date | null = null;
+
+  for (const entry of state.sessionHistory) {
+    const entryDate = new Date(entry.endedAt);
+    if (entryDate.getTime() >= windowStart.getTime()) {
+      if (!earliest || entryDate < earliest) {
+        earliest = entryDate;
+      }
+    }
+  }
+
+  if (state.currentSession) {
+    const sessionStart = new Date(state.currentSession.startedAt);
+    if (!earliest || sessionStart < earliest) {
+      earliest = sessionStart;
+    }
+  }
+
+  if (!earliest) return null;
+
+  // If earliest data point is more than 1 hour after window start,
+  // consider tracking as partial
+  const oneHour = 60 * 60 * 1000;
+  if (earliest.getTime() - windowStart.getTime() > oneHour) {
+    return earliest;
+  }
+
+  return null;
+}
+
+/**
  * Get the state directory path (for setup).
  */
 export function getStateDir(): string {

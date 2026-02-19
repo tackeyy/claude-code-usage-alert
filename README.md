@@ -91,6 +91,10 @@ budget:
   mode: cost
   # Session budget in USD
   sessionBudget: 5.00
+  # Weekly budget in USD
+  weeklyBudget: 50.00
+  # Day of week to reset weekly counter (check your plan's reset day at claude.ai)
+  weeklyResetDay: monday
 
 thresholds:
   - percent: 50
@@ -112,6 +116,8 @@ notifications:
 |-----|------|---------|-------------|
 | `budget.mode` | `"cost"` | `"cost"` | Budget mode (currently only cost-based) |
 | `budget.sessionBudget` | `number` | `5.00` | Session budget in USD |
+| `budget.weeklyBudget` | `number` | `50.00` | Weekly budget in USD |
+| `budget.weeklyResetDay` | `string` | `"monday"` | Day of week to reset weekly counter |
 | `thresholds[].percent` | `number` | `50, 80, 90` | Percentage thresholds that trigger alerts |
 | `thresholds[].notify` | `"terminal" \| "desktop" \| "both"` | varies | Notification method per threshold |
 | `notifications.desktop` | `boolean` | `true` | Enable/disable desktop notifications |
@@ -255,6 +261,26 @@ ccusage is a **post-hoc analysis** tool -- you run it after a session to see how
 ### Will this slow down Claude Code?
 
 No. The Stop hook runs after each assistant turn with a 5-second timeout. Incremental parsing only reads new bytes since the last check, so it typically completes in single-digit milliseconds. If the hook fails or times out, Claude Code silently ignores it.
+
+### What do the dollar amounts in alerts mean?
+
+The dollar amounts (e.g., `$2.50 est. / $5.00`) are **API-equivalent cost estimates**, not actual charges. They are calculated by multiplying your token usage by the published per-token API pricing. For Max plan users who pay a flat monthly fee, these amounts serve as a relative indicator of how intensively you are using the session -- not as a billing statement.
+
+### Does this track usage across sessions?
+
+Yes. In addition to per-session tracking, the tool accumulates estimated costs across all sessions within a configurable weekly window. You can set a `weeklyBudget` and `weeklyResetDay` in your config to receive weekly threshold alerts (prefixed with `[Weekly]`). Session history is stored locally in `~/.claude-code-usage-alert/state.json`.
+
+### Does the weekly budget match Anthropic's actual weekly limit?
+
+No. Anthropic does not expose weekly limit data via API. The weekly budget is a **user-defined target** based on estimated API-equivalent costs. It does not correspond to the "Weekly Limit" bar shown on the claude.ai dashboard. However, it gives you a consistent way to gauge your usage intensity across sessions over the week.
+
+### Can I start using this tool in the middle of a week?
+
+Yes. The tool starts tracking from the moment it is installed. Sessions before installation are not included. This means the first week's total will be lower than actual usage. From the following week onward, the full week is tracked.
+
+### How do I find my plan's weekly reset day?
+
+Check the "Usage Limits" section on [claude.ai](https://claude.ai). The weekly limit bar shows your reset day and time (e.g., "Resets Wednesday at 14:00"). Set `weeklyResetDay` in your config to match.
 
 ### Does it work on Windows?
 

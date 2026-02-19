@@ -18,6 +18,7 @@ import {
   pruneOldHistory,
   getWeeklyNotifiedThresholds,
   markWeeklyThresholdNotified,
+  getWeeklyTrackingSince,
 } from '../core/state-manager.js';
 import { getUsagePercent, checkThresholds } from '../core/usage-calculator.js';
 import { loadConfig } from '../config/loader.js';
@@ -146,6 +147,8 @@ function handleStop(input: HookInput): void {
     );
     const method = thresholdConfig?.notify ?? 'terminal';
 
+    const trackingSince = getWeeklyTrackingSince(state, config.budget.weeklyResetDay) ?? undefined;
+
     const weeklySystemMessage = notify(
       weeklyResult.threshold,
       weeklyPercent,
@@ -153,6 +156,7 @@ function handleStop(input: HookInput): void {
       config.budget.weeklyBudget,
       method,
       'weekly',
+      trackingSince,
     );
 
     markWeeklyThresholdNotified(state, weeklyResult.threshold);
