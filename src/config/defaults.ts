@@ -20,6 +20,7 @@ export interface Config {
     sessionBudget: number;
     weeklyBudget: number;
     weeklyResetDay: WeekDay;
+    weeklyResetHour: number;
   };
   thresholds: ThresholdConfig[];
   notifications: {
@@ -35,6 +36,7 @@ export const DEFAULT_CONFIG: Config = {
     sessionBudget: 5.0,
     weeklyBudget: 50.0,
     weeklyResetDay: 'monday',
+    weeklyResetHour: 0,
   },
   thresholds: [
     { percent: 50, notify: 'terminal' },

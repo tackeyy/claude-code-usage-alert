@@ -97,6 +97,8 @@ budget:
   weeklyBudget: 50.00
   # Day of week to reset weekly counter (check your plan's reset day at claude.ai)
   weeklyResetDay: monday
+  # Hour of day to reset weekly counter (0-23, match your plan's reset time)
+  weeklyResetHour: 0
 
 thresholds:
   - percent: 50
@@ -120,6 +122,7 @@ notifications:
 | `budget.sessionBudget` | `number` | `5.00` | Session budget in USD |
 | `budget.weeklyBudget` | `number` | `50.00` | Weekly budget in USD |
 | `budget.weeklyResetDay` | `string` | `"monday"` | Day of week to reset weekly counter |
+| `budget.weeklyResetHour` | `number` | `0` | Hour of day (0-23) to reset weekly counter |
 | `thresholds[].percent` | `number` | `50, 80, 90` | Percentage thresholds that trigger alerts |
 | `thresholds[].notify` | `"terminal" \| "desktop" \| "both"` | varies | Notification method per threshold |
 | `notifications.desktop` | `boolean` | `true` | Enable/disable desktop notifications |

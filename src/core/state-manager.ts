@@ -165,10 +165,12 @@ export function archiveSession(state: State): void {
 }
 
 /**
- * Calculate the start of the current weekly window based on resetDay.
- * Returns the most recent past occurrence of resetDay at 00:00 local time.
+ * Calculate the start of the current weekly window based on resetDay and resetHour.
+ * Returns the most recent past occurrence of resetDay at resetHour:00 local time.
+ *
+ * When now is on resetDay but before resetHour, the previous week's window is used.
  */
-export function getWeeklyWindowStart(resetDay: string, now?: Date): Date {
+export function getWeeklyWindowStart(resetDay: string, resetHour = 0, now?: Date): Date {
   const DAYS: Record<string, number> = {
     sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
     thursday: 4, friday: 5, saturday: 6,
@@ -183,7 +185,12 @@ export function getWeeklyWindowStart(resetDay: string, now?: Date): Date {
 
   const windowStart = new Date(current);
   windowStart.setDate(windowStart.getDate() - daysBack);
-  windowStart.setHours(0, 0, 0, 0);
+  windowStart.setHours(resetHour, 0, 0, 0);
+
+  // If on resetDay but before resetHour, use previous week's window
+  if (daysBack === 0 && current < windowStart) {
+    windowStart.setDate(windowStart.getDate() - 7);
+  }
 
   return windowStart;
 }
@@ -192,8 +199,8 @@ export function getWeeklyWindowStart(resetDay: string, now?: Date): Date {
  * Get the total cost within the current weekly window.
  * Includes history entries + current session cost.
  */
-export function getWeeklyCost(state: State, resetDay: string): number {
-  const windowStart = getWeeklyWindowStart(resetDay);
+export function getWeeklyCost(state: State, resetDay: string, resetHour = 0): number {
+  const windowStart = getWeeklyWindowStart(resetDay, resetHour);
   const windowStartTime = windowStart.getTime();
 
   let total = 0;
@@ -215,8 +222,8 @@ export function getWeeklyCost(state: State, resetDay: string): number {
 /**
  * Get the number of sessions in the current weekly window (history + current if active).
  */
-export function getWeeklySessionCount(state: State, resetDay: string): number {
-  const windowStart = getWeeklyWindowStart(resetDay);
+export function getWeeklySessionCount(state: State, resetDay: string, resetHour = 0): number {
+  const windowStart = getWeeklyWindowStart(resetDay, resetHour);
   const windowStartTime = windowStart.getTime();
 
   let count = 0;
@@ -238,8 +245,8 @@ export function getWeeklySessionCount(state: State, resetDay: string): number {
 /**
  * Remove history entries older than the current weekly window.
  */
-export function pruneOldHistory(state: State, resetDay: string): void {
-  const windowStart = getWeeklyWindowStart(resetDay);
+export function pruneOldHistory(state: State, resetDay: string, resetHour = 0): void {
+  const windowStart = getWeeklyWindowStart(resetDay, resetHour);
   const windowStartTime = windowStart.getTime();
 
   state.sessionHistory = state.sessionHistory.filter(
@@ -274,8 +281,8 @@ export function getWeeklyNotifiedThresholds(state: State): number[] {
  * Check if weekly tracking covers the full window.
  * Returns the tracking start date if partial, or null if full coverage.
  */
-export function getWeeklyTrackingSince(state: State, resetDay: string, now?: Date): Date | null {
-  const windowStart = getWeeklyWindowStart(resetDay, now);
+export function getWeeklyTrackingSince(state: State, resetDay: string, resetHour = 0, now?: Date): Date | null {
+  const windowStart = getWeeklyWindowStart(resetDay, resetHour, now);
 
   // Find the earliest data point in this window
   let earliest: Date | null = null;

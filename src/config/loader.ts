@@ -61,6 +61,14 @@ export function loadConfig(): Config {
     ) {
       mergedBudget.weeklyResetDay = DEFAULT_CONFIG.budget.weeklyResetDay;
     }
+    if (
+      typeof mergedBudget.weeklyResetHour !== 'number' ||
+      !Number.isInteger(mergedBudget.weeklyResetHour) ||
+      mergedBudget.weeklyResetHour < 0 ||
+      mergedBudget.weeklyResetHour > 23
+    ) {
+      mergedBudget.weeklyResetHour = DEFAULT_CONFIG.budget.weeklyResetHour;
+    }
 
     // Validate thresholds
     let thresholds: ThresholdConfig[];

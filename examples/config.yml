@@ -5,6 +5,12 @@ budget:
   mode: cost
   # Session budget in USD
   sessionBudget: 5.00
+  # Weekly budget in USD
+  weeklyBudget: 50.00
+  # Day of week to reset weekly counter
+  weeklyResetDay: monday
+  # Hour of day to reset weekly counter (0-23, match your plan's reset time)
+  weeklyResetHour: 0
 
 thresholds:
   - percent: 50

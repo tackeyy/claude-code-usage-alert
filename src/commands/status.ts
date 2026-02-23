@@ -12,9 +12,9 @@ import { getUsagePercent } from '../core/usage-calculator.js';
  * Print weekly usage section.
  */
 function printWeeklyUsage(state: State, config: Config): void {
-  const weeklyCost = getWeeklyCost(state, config.budget.weeklyResetDay);
+  const weeklyCost = getWeeklyCost(state, config.budget.weeklyResetDay, config.budget.weeklyResetHour);
   const weeklyPercent = getUsagePercent(weeklyCost, config.budget.weeklyBudget);
-  const weeklySessionCount = getWeeklySessionCount(state, config.budget.weeklyResetDay);
+  const weeklySessionCount = getWeeklySessionCount(state, config.budget.weeklyResetDay, config.budget.weeklyResetHour);
   const resetDayDisplay = config.budget.weeklyResetDay.charAt(0).toUpperCase() + config.budget.weeklyResetDay.slice(1);
 
   const weeklyNotified = getWeeklyNotifiedThresholds(state);

@@ -97,6 +97,8 @@ budget:
   weeklyBudget: 50.00
   # 週間カウンターのリセット曜日（claude.ai のプラン使用制限ページで確認）
   weeklyResetDay: monday
+  # 週間カウンターのリセット時刻（0〜23、プランのリセット時刻に合わせる）
+  weeklyResetHour: 0
 
 thresholds:
   - percent: 50
@@ -120,6 +122,7 @@ notifications:
 | `budget.sessionBudget` | `number` | `5.00` | セッション予算（USD） |
 | `budget.weeklyBudget` | `number` | `50.00` | 週間予算（USD） |
 | `budget.weeklyResetDay` | `string` | `"monday"` | 週間カウンターのリセット曜日 |
+| `budget.weeklyResetHour` | `number` | `0` | 週間カウンターのリセット時刻（0〜23） |
 | `thresholds[].percent` | `number` | `50, 80, 90` | 通知を発火する閾値（%） |
 | `thresholds[].notify` | `"terminal" \| "desktop" \| "both"` | 各種 | 閾値ごとの通知方法 |
 | `notifications.desktop` | `boolean` | `true` | デスクトップ通知の有効/無効 |

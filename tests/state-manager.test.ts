@@ -359,7 +359,7 @@ describe('getWeeklyWindowStart', () => {
   it('returns correct window start when today is after reset day', () => {
     // Wednesday, resetDay=monday → should return this Monday
     const wednesday = new Date('2026-02-18T15:00:00'); // Wednesday
-    const windowStart = stateManager.getWeeklyWindowStart('monday', wednesday);
+    const windowStart = stateManager.getWeeklyWindowStart('monday', 0, wednesday);
     expect(windowStart.getDay()).toBe(1); // Monday
     expect(windowStart.getDate()).toBe(16); // Monday Feb 16
     expect(windowStart.getHours()).toBe(0);
@@ -368,7 +368,7 @@ describe('getWeeklyWindowStart', () => {
   it('returns correct window start when today is before reset day', () => {
     // Tuesday, resetDay=wednesday → should return last Wednesday
     const tuesday = new Date('2026-02-17T15:00:00'); // Tuesday
-    const windowStart = stateManager.getWeeklyWindowStart('wednesday', tuesday);
+    const windowStart = stateManager.getWeeklyWindowStart('wednesday', 0, tuesday);
     expect(windowStart.getDay()).toBe(3); // Wednesday
     expect(windowStart.getDate()).toBe(11); // Last Wednesday Feb 11
   });
@@ -376,10 +376,46 @@ describe('getWeeklyWindowStart', () => {
   it('returns today when today is reset day', () => {
     // Monday, resetDay=monday → should return today (Monday) at 00:00
     const monday = new Date('2026-02-16T15:00:00'); // Monday
-    const windowStart = stateManager.getWeeklyWindowStart('monday', monday);
+    const windowStart = stateManager.getWeeklyWindowStart('monday', 0, monday);
     expect(windowStart.getDay()).toBe(1); // Monday
     expect(windowStart.getDate()).toBe(16); // This Monday
     expect(windowStart.getHours()).toBe(0);
+  });
+
+  it('uses resetHour for window start time', () => {
+    // Wednesday 18:00, resetDay=wednesday, resetHour=14 → should return Wed 14:00 (today)
+    const wednesday = new Date('2026-02-18T18:00:00'); // Wednesday 18:00
+    const windowStart = stateManager.getWeeklyWindowStart('wednesday', 14, wednesday);
+    expect(windowStart.getDay()).toBe(3); // Wednesday
+    expect(windowStart.getDate()).toBe(18); // This Wednesday
+    expect(windowStart.getHours()).toBe(14);
+  });
+
+  it('returns previous week when on resetDay but before resetHour', () => {
+    // Wednesday 10:00, resetDay=wednesday, resetHour=14 → should return last Wed 14:00
+    const wednesday = new Date('2026-02-18T10:00:00'); // Wednesday 10:00
+    const windowStart = stateManager.getWeeklyWindowStart('wednesday', 14, wednesday);
+    expect(windowStart.getDay()).toBe(3); // Wednesday
+    expect(windowStart.getDate()).toBe(11); // Last Wednesday Feb 11
+    expect(windowStart.getHours()).toBe(14);
+  });
+
+  it('returns current week when on resetDay and after resetHour', () => {
+    // Wednesday 15:00, resetDay=wednesday, resetHour=14 → should return Wed 14:00 (today)
+    const wednesday = new Date('2026-02-18T15:00:00'); // Wednesday 15:00
+    const windowStart = stateManager.getWeeklyWindowStart('wednesday', 14, wednesday);
+    expect(windowStart.getDay()).toBe(3); // Wednesday
+    expect(windowStart.getDate()).toBe(18); // This Wednesday
+    expect(windowStart.getHours()).toBe(14);
+  });
+
+  it('returns current week when on resetDay and exactly at resetHour', () => {
+    // Wednesday 14:00:00, resetDay=wednesday, resetHour=14 → should return Wed 14:00 (today)
+    const wednesday = new Date('2026-02-18T14:00:00'); // Wednesday 14:00 exactly
+    const windowStart = stateManager.getWeeklyWindowStart('wednesday', 14, wednesday);
+    expect(windowStart.getDay()).toBe(3); // Wednesday
+    expect(windowStart.getDate()).toBe(18); // This Wednesday
+    expect(windowStart.getHours()).toBe(14);
   });
 });
 
@@ -394,7 +430,7 @@ describe('getWeeklyTrackingSince', () => {
 
   it('returns null when no sessions exist', () => {
     const state = stateManager.loadState();
-    expect(stateManager.getWeeklyTrackingSince(state, 'monday')).toBeNull();
+    expect(stateManager.getWeeklyTrackingSince(state, 'monday', 0)).toBeNull();
   });
 
   it('returns null when tracking covers full window', () => {
@@ -413,7 +449,7 @@ describe('getWeeklyTrackingSince', () => {
       weeklyNotifiedThresholds: [],
     };
     // Within 1 hour of window start → full coverage
-    expect(stateManager.getWeeklyTrackingSince(state, 'monday', monday)).toBeNull();
+    expect(stateManager.getWeeklyTrackingSince(state, 'monday', 0, monday)).toBeNull();
   });
 
   it('returns tracking start date when partial coverage', () => {
@@ -431,7 +467,7 @@ describe('getWeeklyTrackingSince', () => {
       sessionHistory: [],
       weeklyNotifiedThresholds: [],
     };
-    const result = stateManager.getWeeklyTrackingSince(state, 'monday', wednesday);
+    const result = stateManager.getWeeklyTrackingSince(state, 'monday', 0, wednesday);
     expect(result).not.toBeNull();
     expect(result!.getDay()).toBe(3); // Wednesday
   });
@@ -458,7 +494,7 @@ describe('getWeeklyTrackingSince', () => {
       ],
       weeklyNotifiedThresholds: [],
     };
-    const result = stateManager.getWeeklyTrackingSince(state, 'monday', wednesday);
+    const result = stateManager.getWeeklyTrackingSince(state, 'monday', 0, wednesday);
     expect(result).not.toBeNull();
     expect(result!.getDay()).toBe(2); // Tuesday (earlier than Wednesday)
   });

@@ -3,4 +3,5 @@ dist/
 *.js
 !src/**/*.js
 .claude-code-usage-alert/
+.claude/
 *.tsbuildinfo

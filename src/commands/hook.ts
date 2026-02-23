@@ -57,7 +57,7 @@ function parseHookInput(raw: string): HookInput {
 function handleSessionStart(input: HookInput): void {
   const config = loadConfig();
   const state = loadState();
-  pruneOldHistory(state, config.budget.weeklyResetDay);
+  pruneOldHistory(state, config.budget.weeklyResetDay, config.budget.weeklyResetHour);
 
   const sessionId = input.session_id ?? `session-${Date.now()}`;
   initSession(sessionId);
@@ -136,7 +136,7 @@ function handleStop(input: HookInput): void {
   }
 
   // Weekly budget threshold check
-  const weeklyCost = getWeeklyCost(state, config.budget.weeklyResetDay);
+  const weeklyCost = getWeeklyCost(state, config.budget.weeklyResetDay, config.budget.weeklyResetHour);
   const weeklyPercent = getUsagePercent(weeklyCost, config.budget.weeklyBudget);
   const weeklyNotified = getWeeklyNotifiedThresholds(state);
   const weeklyResult = checkThresholds(weeklyPercent, weeklyNotified, configThresholds);
@@ -147,7 +147,7 @@ function handleStop(input: HookInput): void {
     );
     const method = thresholdConfig?.notify ?? 'terminal';
 
-    const trackingSince = getWeeklyTrackingSince(state, config.budget.weeklyResetDay) ?? undefined;
+    const trackingSince = getWeeklyTrackingSince(state, config.budget.weeklyResetDay, config.budget.weeklyResetHour) ?? undefined;
 
     const weeklySystemMessage = notify(
       weeklyResult.threshold,
